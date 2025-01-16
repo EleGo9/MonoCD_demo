@@ -1,0 +1,3 @@
+[submodule "model/backbone/DCNv2_latest"]
+	path = model/backbone/DCNv2_latest
+	url = https://github.com/lucasjinreal/DCNv2_latest.git
