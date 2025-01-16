@@ -12,7 +12,7 @@ from model import registry
 from model.layers.utils import sigmoid_hm
 from model.make_layers import group_norm, _fill_fc_weights
 from model.layers.utils import select_point_of_interest
-from model.backbone.DCNv2.dcn_v2 import DCNv2
+from model.backbone.DCNv2_latest.dcn_v2 import DCNv2
 
 from inplace_abn import InPlaceABN
 

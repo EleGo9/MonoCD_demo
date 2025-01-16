@@ -819,10 +819,10 @@ def draw_projected_box3d(image, qs, color=None, cls=None, thickness=2, draw_orie
         height_pos = (qs[:4] + qs[4:8]) / 2
         height_pos_center = qs[8:].mean(axis=0)
         for i in range(height_pos.shape[0]):
-            cv2.putText(image, 'h_{}'.format(i + 1), tuple(height_pos[i].astype(np.int)), cv2.FONT_HERSHEY_SIMPLEX, 
+            cv2.putText(image, 'h_{}'.format(i + 1), tuple(height_pos[i].astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 
                                 height_text_size, (255, 0, 0), 1, cv2.LINE_AA)
 
-        cv2.putText(image, 'h_c'.format(i + 1), tuple(height_pos_center.astype(np.int)), cv2.FONT_HERSHEY_SIMPLEX, 
+        cv2.putText(image, 'h_c'.format(i + 1), tuple(height_pos_center.astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 
                             height_text_size, (255, 0, 0), 1, cv2.LINE_AA)
 
 
@@ -1085,17 +1085,17 @@ def get_3d_dis(image, objs, calib):
     corners_3d = obj.generate_corners3d()
     corners_2d, _ = calib.project_rect_to_image(corners_3d)
 
-    box2d = proj3d_to_2d(corners_2d).astype(np.int) 
+    box2d = proj3d_to_2d(corners_2d).astype(int) 
 
     center_3d = obj.t.copy()
     center_3d[1] = center_3d[1] - obj.h / 2
     center_2d, _ = calib.project_rect_to_image(center_3d.reshape(-1, 3))
-    center_2d = center_2d.astype(np.int)
+    center_2d = center_2d.astype(int)
 
     center_idxs = np.array([[0, 1, 4, 5], [0, 1, 2, 3], [0, 3, 4, 7]])
     # shape: 3 x 4 x 3
     centers = corners_3d[center_idxs].mean(axis=1)
-    centers_2d = corners_2d[center_idxs].mean(axis=1).astype(np.int)
+    centers_2d = corners_2d[center_idxs].mean(axis=1).astype(int)
     # vectors
     vectors = centers_2d - center_2d.reshape(1, 2)
     vectors = vectors / np.sqrt(np.sum(vectors ** 2, axis=1)).reshape(-1, 1)
@@ -1177,8 +1177,8 @@ def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_
         img3 = draw_projected_box3d(img3, corners_2d_i, cls=id_to_cls[cls_ids[idx]], draw_corner=index)
         
         # target center and 3D center
-        cv2.circle(img3, tuple(center_2d[idx].astype(np.int)), 4, (255, 0, 0), -1)
-        cv2.circle(img3, tuple(ori_target_center[idx].astype(np.int)), 4, (0, 255, 255), -1)
+        cv2.circle(img3, tuple(center_2d[idx].astype(int)), 4, (255, 0, 0), -1)
+        cv2.circle(img3, tuple(ori_target_center[idx].astype(int)), 4, (0, 255, 255), -1)
 
     img2 = img2_vis.output.get_image()
     stacked_img = np.vstack((img2, img3))
@@ -1193,7 +1193,7 @@ def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_
 def show_edge_heatmap(img, edge_heatmap, interp_edge_indices, output_size):
     # output_size: w, h
     resized_img = img.resize(output_size)
-    interp_edge_indices_int = interp_edge_indices.round().astype(np.int)
+    interp_edge_indices_int = interp_edge_indices.round().astype(int)
     full_edgemap = np.zeros((output_size[1], output_size[0]), dtype=np.float32)
     full_edgemap[interp_edge_indices_int[:, 1], interp_edge_indices_int[:, 0]] = edge_heatmap[0]
 

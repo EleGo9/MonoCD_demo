@@ -34,6 +34,15 @@ cd ../../..
 python setup.py develop
 ```
 
+## Installation Newer Versions:
+
+```
+ cd model/backbone
+git clone https://github.com/lucasjinreal/DCNv2_latest.git
+cd DCNv2_latest 
+```
+
+
 ## Data Preparation
 
 Please download [KITTI dataset](http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d) and organize the data as follows:
