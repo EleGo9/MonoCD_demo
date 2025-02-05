@@ -63,6 +63,19 @@ Please download [KITTI dataset](http://www.cvlibs.net/datasets/kitti/eval_object
 
 The road planes for Horizon Heatmap training could be downloaded from [HERE](https://download.openmmlab.com/mmdetection3d/data/train_planes.zip). Then remember to set the `DATA_DIR = "/path/to/your/kitti/"` in the `config/paths_catalog.py` according to your data path.
 
+## Other Datasets
+
+# Indy dataset
+To use the INDYDataset class, you must:
+- change the 'config/paths_catalog.py' file with your custom DATA_DIR and DATASETS paths;
+- change the runs/monocd.yaml file in TRAIN: ("indy_train",) and TEST: ("indy_train",) according to paths_catalog.py file and  DATASETS:DETECT_CLASSES:('Car', ...) according to the number and name of classes;
+
+Before using your dataset, check its format with tool/data_loader_check.py
+
+```
+CUDA_VISIBLE_DEVICES=0 python tools/data_loader_check.py --config runs/monocd.yaml --output output/exp
+```
+
 ## Get Started
 
 ### Train
