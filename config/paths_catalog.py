@@ -1,13 +1,22 @@
 import os
 
 class DatasetCatalog():
-    DATA_DIR = "/path/to/your/kitti/"
+    # DATA_DIR = "/media/franco/elenagovi/"
+    # DATASETS = {
+    #     "kitti_train": {
+    #         "root": "KITTI/training/",
+    #     },
+    #     "kitti_test": {
+    #         "root": "KITTI/testing/",
+    #     },
+    # }
+
+
+    DATA_DIR = '/media/franco/hdd/dataset/dataset_3d'
     DATASETS = {
-        "kitti_train": {
-            "root": "KITTI/training/",
-        },
-        "kitti_test": {
-            "root": "KITTI/testing/",
+        'indy_train':{
+            # 'root': 'sample_dataset'
+            'root': '20250104_lvms_run02_virginia/camera_fc'
         },
     }
 
@@ -21,6 +30,16 @@ class DatasetCatalog():
             )
             return dict(
                 factory="KITTIDataset",
+                args=args,
+            )
+        elif "indy" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                root=os.path.join(data_dir, attrs["root"]),
+            )
+            return dict(
+                factory="INDYDataset",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))
