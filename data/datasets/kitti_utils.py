@@ -311,17 +311,24 @@ class Calibration(object):
         return pts_2d_[:, 0:2], pts_2d_[:, 2]
 
     def distort(self, pt, calibs):
-        x = (pt[0] - calibs['K'][0, 2]) / calibs['K'][0, 0]
-        y = (pt[1] - calibs['K'][1, 2]) / calibs['K'][1, 1]
+        cx = calibs['K'][0, 2]
+        cy = calibs['K'][1, 2]
+        fx = calibs['K'][0, 0]
+        fy = calibs['K'][1, 1]
+        d = calibs['D']
+        d[-1] = 0 # don't use last value
+
+        x = (pt[0] - cx) / fx
+        y = (pt[1] - cy) / fy
 
         r2 = x * x + y * y
 
-        m1 = (1 + calibs['D'][0] * r2 + calibs['D'][1] * r2 * r2 + calibs['D'][4] * r2 * r2 * r2)
-        x_ = x * m1 + 2 * calibs['D'][2] * x * y + calibs['D'][3] * (r2 + 2 * x * x)
-        y_ = y * m1 + calibs['D'][2] * (r2 + 2 * y * y) + 2 * calibs['D'][3] * x * y
+        m1 = (1 + d[0] * r2 + d[1] * r2 * r2 + d[4] * r2 * r2 * r2)
+        x_ = x * m1 + 2 * d[2] * x * y + d[3] * (r2 + 2 * x * x)
+        y_ = y * m1 + d[2] * (r2 + 2 * y * y) + 2 * d[3] * x * y
 
-        x = x_ * calibs['K'][0, 0] + calibs['K'][0, 2]
-        y = y_ * calibs['K'][1, 1] + calibs['K'][1, 2]
+        x = x_ * fx + cx
+        y = y_ * fy + cy
 
         return np.array([x, y])
 
@@ -334,7 +341,6 @@ class Calibration(object):
         pts_2d = np.dot(pts_3d_rect, np.transpose(self.P))  # nx3
         pts_2d[:, 0] /= pts_2d[:, 2]
         pts_2d[:, 1] /= pts_2d[:, 2]
-
         calibs = {
             'K': np.array([[self.f_u, 0, self.c_u], [0, self.f_v, self.c_v], [0, 0, 1]]), 
             'D': [-0.201739344464262, 0.086247930627047234, -0.00032902667256753601, -0.00021994952717063681, -0.015380354265408284]
@@ -342,7 +348,7 @@ class Calibration(object):
 
         for i in range(pts_2d.shape[0]):
             pts_2d[i, 0:2] = self.distort(pts_2d[i, 0:2], calibs)
-        
+
         return pts_2d[:, 0:2], pts_2d[:, 2]
 
     def project_velo_to_image(self, pts_3d_velo):
@@ -780,9 +786,9 @@ def draw_dotted_line(img, pt1, pt2, color, thickness=1, style='dotted', gap=4):
             i+=1
 
 
-def draw_projected_box3d(image, qs, color=None, cls=None, thickness=2, draw_orientation=False, draw_height_text=False,
+def draw_projected_box3d(image, qs, color=None, cls=None, thickness=2, draw_orientation=True, draw_height_text=False,
                         draw_center_line=False, draw_corner=True, draw_number=False, corner_size=3, draw_corner_line=False, 
-                        draw_orien_surface=True):
+                        draw_orien_surface=False):
     """ Draw 3d bounding box in image
         qs: (8,3) array of vertices for the 3d box in following order:
             1 -------- 0
@@ -1199,7 +1205,7 @@ def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_
         # 8 x 3
         corners_2d_i = (corners_2d[idx][:, :2] + target_center[idx].reshape(1, 2)) * down_ratio
         img3 = draw_projected_box3d(img3, corners_2d_i, cls=id_to_cls[cls_ids[idx]], draw_corner=index)
-        
+
         # target center and 3D center
         cv2.circle(img3, tuple(center_2d[idx].astype(int)), 4, (255, 0, 0), -1)
         cv2.circle(img3, tuple(ori_target_center[idx].astype(int)), 4, (0, 255, 255), -1)
