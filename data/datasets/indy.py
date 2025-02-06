@@ -623,15 +623,15 @@ class INDYDataset(Dataset):
 
 			# generate 8 corners of 3d bbox
 			corners_3d = obj.generate_corners3d()
-			corners_2d, _ = calib.project_rect_to_image(corners_3d)
-			projected_box2d = np.array([corners_2d[:, 0].min(), corners_2d[:, 1].min(), 
-										corners_2d[:, 0].max(), corners_2d[:, 1].max()])
+			# corners_2d, _ = calib.project_rect_to_image(corners_3d)
+			# projected_box2d = np.array([corners_2d[:, 0].min(), corners_2d[:, 1].min(), 
+			# 							corners_2d[:, 0].max(), corners_2d[:, 1].max()])
 
-			if projected_box2d[0] >= 0 and projected_box2d[1] >= 0 and \
-					projected_box2d[2] <= img_w - 1 and projected_box2d[3] <= img_h - 1:
-				box2d = projected_box2d.copy()
-			else:
-				box2d = obj.box2d.copy()
+			# if projected_box2d[0] >= 0 and projected_box2d[1] >= 0 and \
+			# 		projected_box2d[2] <= img_w - 1 and projected_box2d[3] <= img_h - 1:
+			# 	box2d = projected_box2d.copy()
+			# else:
+			box2d = obj.box2d.copy()
 
 			# filter some unreasonable annotations
 			if self.filter_annos:
@@ -703,6 +703,7 @@ class INDYDataset(Dataset):
 				# print('bbox center', bbox_center)
 			else:
 				target_center = target_proj_center.round().astype(int)
+
 				# print('target_proj_center', target_proj_center)
 				# print('bbox center', bbox_center)
 			# print('target_center', target_center )
@@ -712,12 +713,16 @@ class INDYDataset(Dataset):
 			# print('target_center', target_center )
 
 			pred_2D = True # In fact, there are some wrong annotations where the target center is outside the box2d
-			if not (target_center[0] >= box2d[0] and target_center[1] >= box2d[1] and target_center[0] <= box2d[2] and target_center[1] <= box2d[3]):
-				pred_2D = False
-				# print('Entered in the pred 2d false')
-				# print(f'target center: {target_center} \m box2d {box2d} ')
-				# print()
-				# print('------------------------------------------')
+			# if not (target_center[0] >= box2d[0] and target_center[1] >= box2d[1] and target_center[0] <= box2d[2] and target_center[1] <= box2d[3]):
+			# 	pred_2D = False
+			# 	print('Target center outside the bbox')
+			# 	print('box2d', box2d)
+			# 	print('target_center', target_center)
+			# 	continue
+			# 	# print('Entered in the pred 2d false')
+			# 	# print(f'target center: {target_center} \m box2d {box2d} ')
+			# 	# print()
+			# 	# print('------------------------------------------')
 
 			#
 			if (bbox_dim > 0).all() and (0 <= target_center[0] <= self.output_width - 1) and (0 <= target_center[1] <= self.output_height - 1):
@@ -750,7 +755,12 @@ class INDYDataset(Dataset):
 				# 2D bboxes
 				gt_bboxes[i] = obj.box2d.copy() # for visualization
 				# bboxes[i] = box2d #TODO check the pred_2D before this! only created for debugginh
-				if pred_2D: bboxes[i] = box2d
+				if pred_2D: 
+					bboxes[i] = box2d
+				# else:
+					# plt.figure(figsize=(10, 6))
+					# plt.imshow(img3)
+					# plt.savefig(f"gt_debug/{idx}.png")
 				# print('bboxes', bboxes[i])
 				# if np.all(gt_bboxes[i]==[0., 0., 0., 0.]) or np.all(box2d==[0., 0., 0., 0.]):
 				# 	print(f'{idx} has bbox 0 0 0 0')

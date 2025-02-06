@@ -310,6 +310,22 @@ class Calibration(object):
 
         return pts_2d_[:, 0:2], pts_2d_[:, 2]
 
+    def distort(self, pt, calibs):
+        x = (pt[0] - calibs['K'][0, 2]) / calibs['K'][0, 0]
+        y = (pt[1] - calibs['K'][1, 2]) / calibs['K'][1, 1]
+
+        r2 = x * x + y * y
+
+        m1 = (1 + calibs['D'][0] * r2 + calibs['D'][1] * r2 * r2 + calibs['D'][4] * r2 * r2 * r2)
+        x_ = x * m1 + 2 * calibs['D'][2] * x * y + calibs['D'][3] * (r2 + 2 * x * x)
+        y_ = y * m1 + calibs['D'][2] * (r2 + 2 * y * y) + 2 * calibs['D'][3] * x * y
+
+        x = x_ * calibs['K'][0, 0] + calibs['K'][0, 2]
+        y = y_ * calibs['K'][1, 1] + calibs['K'][1, 2]
+
+        return np.array([x, y])
+
+
     def project_rect_to_image(self, pts_3d_rect):
         """ Input: nx3 points in rect camera coord.
             Output: nx2 points in image2 coord.
@@ -318,6 +334,15 @@ class Calibration(object):
         pts_2d = np.dot(pts_3d_rect, np.transpose(self.P))  # nx3
         pts_2d[:, 0] /= pts_2d[:, 2]
         pts_2d[:, 1] /= pts_2d[:, 2]
+
+        calibs = {
+            'K': np.array([[self.f_u, 0, self.c_u], [0, self.f_v, self.c_v], [0, 0, 1]]), 
+            'D': [-0.201739344464262, 0.086247930627047234, -0.00032902667256753601, -0.00021994952717063681, -0.015380354265408284]
+        }
+
+        for i in range(pts_2d.shape[0]):
+            pts_2d[i, 0:2] = self.distort(pts_2d[i, 0:2], calibs)
+        
         return pts_2d[:, 0:2], pts_2d[:, 2]
 
     def project_velo_to_image(self, pts_3d_velo):
@@ -1085,7 +1110,7 @@ def get_3d_dis(image, objs, calib):
     corners_3d = obj.generate_corners3d()
     corners_2d, _ = calib.project_rect_to_image(corners_3d)
 
-    box2d = proj3d_to_2d(corners_2d).astype(int) 
+    box2d = proj3d_to_2d(corners_2d).astype(nint) 
 
     center_3d = obj.t.copy()
     center_3d[1] = center_3d[1] - obj.h / 2
@@ -1144,7 +1169,6 @@ def get_3d_dis(image, objs, calib):
     plt.show()
 
 def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_mask, offset_3D, down_ratio, pad_size, encoded_alphas, vis=True, index=[]):
-
     image = np.array(image)
     img2 = np.copy(image) # for 2d bbox
     img3 = np.copy(image) # for 3d bbox
@@ -1188,7 +1212,7 @@ def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_
         plt.imshow(stacked_img)
         plt.show()
 
-    return img3
+    return stacked_img
 
 def show_edge_heatmap(img, edge_heatmap, interp_edge_indices, output_size):
     # output_size: w, h
@@ -1321,7 +1345,6 @@ def show_horizon_heatmap(vis_target, horizon_heat_map):
     # max_horizon_heat_map[max_horizon_heat_map != 1] = 0
     # max_horizon_heat_map = max_horizon_heat_map[np.newaxis, ...]
     # show_heatmap(Image.fromarray(gt_and_ls_horizon_img), max_horizon_heat_map, classes=['horizon'])
-
 
 
 
