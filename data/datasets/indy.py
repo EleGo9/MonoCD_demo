@@ -57,7 +57,8 @@ class INDYDataset(Dataset):
 		self.image_files = image_files
 		self.label_files = [i.replace(".png", ".txt") for i in self.image_files]
 		self.check_empty_label()
-		self.check_out_bbox_label() # remove all 2d bboxes out of the image (TODO change this with edit instead of removal) 
+		# self.check_out_bbox_label() # remove all 2d bboxes out of the image (TODO change this with edit instead of removal) 
+		
 		# print(self.image_files)
 		# print(self.label_files)
 		self.use_ground_plane = cfg.USE_GROUND_PLANE
@@ -69,9 +70,7 @@ class INDYDataset(Dataset):
 		if self.use_ground_plane or self.pred_ground_plane:
 			self.planes_files = self.label_files
 
-		self.classes = cfg.DATASETS.DETECT_CLASSES
-		self.num_classes = len(self.classes)
-		self.num_samples = len(self.image_files)
+
 
 		# whether to use right-view image
 		self.use_right_img = cfg.DATASETS.USE_RIGHT_IMAGE & is_train
@@ -96,9 +95,13 @@ class INDYDataset(Dataset):
 
 		# handling truncation
 		self.consider_outside_objs = cfg.DATASETS.CONSIDER_OUTSIDE_OBJS
+		
 		self.use_approx_center = cfg.INPUT.USE_APPROX_CENTER # whether to use approximate representations for outside objects
 		self.proj_center_mode = cfg.INPUT.APPROX_3D_CENTER # the type of approximate representations for outside objects
-
+		self.remove_target_outside()
+		self.classes = cfg.DATASETS.DETECT_CLASSES
+		self.num_classes = len(self.classes)
+		self.num_samples = len(self.image_files)
 		# for edge feature fusion
 		self.enable_edge_fusion = cfg.MODEL.HEAD.ENABLE_EDGE_FUSION
 
@@ -461,49 +464,127 @@ class INDYDataset(Dataset):
 
 		return sampled_pts
 
-	def __getitem__(self, idx):
+
+	def distort(self, pt, calibs):
 		
-		if idx >= self.num_samples:
-			# print('Right image')
-			# utilize right color image
-			idx = idx % self.num_samples
-			img = self.get_right_image(idx)
-			calib = self.get_calibration(idx, use_right_cam=True)
-			objs = None if self.split == 'test' else self.get_label_objects(idx)
-			# print('objs', objs)
+		x = (pt[0] - calibs['K'][0, 2]) / calibs['K'][0, 0]
+		y = (pt[1] - calibs['K'][1, 2]) / calibs['K'][1, 1]
 
-			if not objs:
-				return self.__getitem__((idx + 1) % self.num_samples)  #
+		r2 = x * x + y * y
 
-			use_right_img = True
-			# generate the bboxes for right color image
-			right_objs = []
-			img_w, img_h = img.size
+		m1 = (1 + calibs['D'][0] * r2 + calibs['D'][1] * r2 * r2 + calibs['D'][4] * r2 * r2 * r2)
+		x_ = x * m1 + 2 * calibs['D'][2] * x * y + calibs['D'][3] * (r2 + 2 * x * x)
+		y_ = y * m1 + calibs['D'][2] * (r2 + 2 * y * y) + 2 * calibs['D'][3] * x * y
+
+		x = x_ * calibs['K'][0, 0] + calibs['K'][0, 2]
+		y = y_ * calibs['K'][1, 1] + calibs['K'][1, 2]
+
+		return np.array([x, y])
+
+
+	def remove_target_outside(self ):
+		print('remove target outside')
+		valid_images = []
+		valid_labels = []
+		valid_calib = []
+
+		for img, label in zip(self.image_files, self.label_files):
+			label_path = os.path.join(self.label_dir, label)
+			calib_path = os.path.join(self.calib_dir, label)
+			img_path = os.path.join(self.image_dir, img)
+			# calib_path = os.path.join(self.calib_dir, label.replace('.txt', '.calib'))
+
+			# Check if label exists
+			if not os.path.exists(label_path) or os.path.getsize(label_path) == 0:
+				continue  # Skip if no label file
+
+			# Load calibration and label objects
+			calib = Calibration(calib_path, use_right_cam=False)
+			objs = read_label(label_path)
+			image = cv2.imread(img_path)
+			img_w, img_h = image.shape[:2]
+			# print(image.shape)
+
+			# Check each object in the image
+			pred_2D_valid = False
 			for obj in objs:
+				locs = obj.t.copy()
+				el = locs[1]
+				locs[1] = locs[1] - obj.h / 2
+				if locs[-1] <= 0: continue # objects which are behind the image
+
 				corners_3d = obj.generate_corners3d()
 				corners_2d, _ = calib.project_rect_to_image(corners_3d)
-				obj.box2d = np.array([max(corners_2d[:, 0].min(), 0), max(corners_2d[:, 1].min(), 0), 
-									min(corners_2d[:, 0].max(), img_w - 1), min(corners_2d[:, 1].max(), img_h - 1)], dtype=np.float32)
+				projected_box2d = np.array([
+					corners_2d[:, 0].min(), corners_2d[:, 1].min(), 
+					corners_2d[:, 0].max(), corners_2d[:, 1].max()
+				])
 
-				obj.xmin, obj.ymin, obj.xmax, obj.ymax = obj.box2d
-				right_objs.append(obj)
+				# Use projected box if within bounds, otherwise use default box
+				if 0 <= projected_box2d[0] < img_w and 0 <= projected_box2d[1] < img_h and \
+					0 <= projected_box2d[2] < img_w and 0 <= projected_box2d[3] < img_h:
+					box2d = projected_box2d.copy()
+				else:
+					box2d = obj.box2d.copy()
 
-			objs = right_objs
-		else:
-			# utilize left color image
-			# print('Left image')
-			img = self.get_image(idx)
-			calib = self.get_calibration(idx)
-			objs = None if self.split == 'test' else self.get_label_objects(idx)
-			ground_plane = None
-			if self.use_ground_plane or self.pred_ground_plane:
-				ground_plane = None if self.split == 'test' else self.get_ground_planes(idx)
-				if self.modify_ground_plane_d:
-					ground_plane[-1] = 1.65
+				# Project 3D center to image plane
+				proj_center, depth = calib.project_rect_to_image(locs.reshape(-1, 3))
+				proj_center = proj_center[0]
+				# print('proj_cetner', proj_center)
 
-			use_right_img = False
-			# get_3d_dis(img, objs, calib)
-			# show_image_with_boxes(img, cls_ids, target_center, box2d, corners_2d, reg_mask, offset_3D, down_ratio, pad_size, encoded_alphas, vis=True, index=[])
+				# generate approximate projected center when it is outside the image
+				proj_inside_img = (0 <= proj_center[0] <= img_w - 1) & (0 <= proj_center[1] <= img_h - 1)
+				
+				approx_center = False
+				if not proj_inside_img:
+					if self.consider_outside_objs:
+						approx_center = True
+
+						center_2d = (box2d[:2] + box2d[2:]) / 2
+						if self.proj_center_mode == 'intersect':
+							target_proj_center, edge_index = approx_proj_center(proj_center, center_2d.reshape(1, 2), (img_w, img_h))
+							if target_proj_center is None:
+								# print('Warning: center_2d is not in image')
+								continue
+						else:
+							raise NotImplementedError
+					else:
+						continue
+				else:
+					target_proj_center = proj_center.copy()
+				target_center = target_proj_center.round().astype(int)
+				# Check if projected center is inside the bounding box
+				if box2d[0] <= proj_center[0] <= box2d[2] and box2d[1] <= proj_center[1] <= box2d[3]:
+					if (target_center[0] >= box2d[0] and target_center[1] >= box2d[1] and target_center[0] <= box2d[2] and target_center[1] <= box2d[3]):
+						pred_2D_valid = True
+					# break  # Keep the image if at least one valid object exists
+
+			# Keep the sample only if pred_2D is valid
+			if pred_2D_valid:
+				valid_images.append(img)
+				valid_labels.append(label)
+				valid_calib.append(calib)
+		# print(valid_labels)
+		self.image_files = valid_images
+		self.label_files = valid_labels
+		self.calib_files = valid_calib
+		print('num image files', len(self.image_files))
+		print(self.image_files[0])
+
+
+	def __getitem__(self, idx):
+		img = self.get_image(idx)
+		calib = self.get_calibration(idx)
+		objs = None if self.split == 'test' else self.get_label_objects(idx)
+		ground_plane = None
+		if self.use_ground_plane or self.pred_ground_plane:
+			ground_plane = None if self.split == 'test' else self.get_ground_planes(idx)
+			if self.modify_ground_plane_d:
+				ground_plane[-1] = 1.65
+
+		use_right_img = False
+		# get_3d_dis(img, objs, calib)
+		# show_image_with_boxes(img, cls_ids, target_center, box2d, corners_2d, reg_mask, offset_3D, down_ratio, pad_size, encoded_alphas, vis=True, index=[])
 
 		original_idx = self.image_files[idx][:6]
 		if not objs == None:
@@ -702,7 +783,10 @@ class INDYDataset(Dataset):
 				target_center = bbox_center.round().astype(int)
 				# print('bbox center', bbox_center)
 			else:
+
+				# target_center = self.distort(target_proj_center, {'K': np.array([[calib.f_u, 0, calib.c_u], [0, calib.f_v, calib.c_v], [0, 0, 1]]), 'D': [-0.201739344464262, 0.086247930627047234, -0.00032902667256753601, -0.00021994952717063681, -0.015380354265408284]})
 				target_center = target_proj_center.round().astype(int)
+
 				# print('target_proj_center', target_proj_center)
 				# print('bbox center', bbox_center)
 			# print('target_center', target_center )
@@ -714,6 +798,9 @@ class INDYDataset(Dataset):
 			pred_2D = True # In fact, there are some wrong annotations where the target center is outside the box2d
 			if not (target_center[0] >= box2d[0] and target_center[1] >= box2d[1] and target_center[0] <= box2d[2] and target_center[1] <= box2d[3]):
 				pred_2D = False
+				print('Target center outside the bbox')
+				print(box2d)
+				print(target_center)
 				# print('Entered in the pred 2d false')
 				# print(f'target center: {target_center} \m box2d {box2d} ')
 				# print()
@@ -750,7 +837,12 @@ class INDYDataset(Dataset):
 				# 2D bboxes
 				gt_bboxes[i] = obj.box2d.copy() # for visualization
 				# bboxes[i] = box2d #TODO check the pred_2D before this! only created for debugginh
-				if pred_2D: bboxes[i] = box2d
+				if pred_2D: 
+					bboxes[i] = box2d
+				# else:
+				# 	plt.figure(figsize=(10, 6))
+				# 	plt.imshow(img3)
+				# 	plt.savefig(f"gt_debug/{idx}.png")
 				# print('bboxes', bboxes[i])
 				# if np.all(gt_bboxes[i]==[0., 0., 0., 0.]) or np.all(box2d==[0., 0., 0., 0.]):
 				# 	print(f'{idx} has bbox 0 0 0 0')
