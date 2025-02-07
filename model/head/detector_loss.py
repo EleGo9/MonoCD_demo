@@ -156,10 +156,12 @@ class Loss_Computation():
 
 		reg_mask_gt = targets_variables["reg_mask"]
 		flatten_reg_mask_gt = reg_mask_gt.view(-1).bool()
+		flatten_reg_mask_gt = flatten_reg_mask_gt.to(reg_mask_gt.device)
 
 		# the corresponding image_index for each object, used for finding pad_size, calib and so on
 		batch_idxs = torch.arange(batch).view(-1, 1).expand_as(reg_mask_gt).reshape(-1)
-		batch_idxs = batch_idxs[flatten_reg_mask_gt].to(reg_mask_gt.device) 
+		batch_idxs = batch_idxs.to(reg_mask_gt.device)
+		batch_idxs = batch_idxs[flatten_reg_mask_gt] 
 
 		valid_targets_bbox_points = targets_bbox_points.view(-1, 2)[flatten_reg_mask_gt]
 
