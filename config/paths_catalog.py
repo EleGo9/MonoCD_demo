@@ -16,7 +16,7 @@ class DatasetCatalog():
     DATASETS = {
         'indy_train':{
             # 'root': 'sample_dataset'
-            'root': '20250104_lvms_run02_virginia/camera_fc'
+            'root': '20250104_lvms_run02_virginia/camera_fr'
         },
     }
 

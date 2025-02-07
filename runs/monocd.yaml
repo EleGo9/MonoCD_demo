@@ -1,7 +1,7 @@
 DATASETS:
   DETECT_CLASSES: ("Car", )
-  TRAIN: ("kitti_train",)
-  TEST: ("kitti_train",)
+  TRAIN: ("indy_train",)
+  TEST: ("indy_train",)
   TRAIN_SPLIT: "train"
   TEST_SPLIT: "val"
   MAX_OBJECTS: 40
