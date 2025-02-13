@@ -83,7 +83,7 @@ def compute_on_dataset(model, data_loader, device, predict_folder, timer=None, v
 
                 if vis:
                     show_image_with_boxes(vis_target.get_field('ori_img'), output, vis_target,
-                                          visualize_preds, vis_scores=eval_utils['vis_scores'])
+                                          visualize_preds, vis_scores=eval_utils['vis_scores'], idx=idx)
 
                 if vis_horizon:
                     # draw a fusion diagram of the horizontal line heatmap and the original image

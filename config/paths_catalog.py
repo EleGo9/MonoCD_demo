@@ -13,12 +13,17 @@ class DatasetCatalog():
 
 
     DATA_DIR = '/media/franco/hdd/dataset/dataset_3d'
+
     DATASETS = {
-        'indy_train':{
-            # 'root': 'sample_dataset'
-            'root': '20250104_lvms_run02_virginia/camera_fr'
+        'indy_virginia':{
+        'root': '20250104_lvms_run02_virginia/camera_fc_cropped',
         },
-    }
+        'indy_polimove2':{
+        'root': '20250105_lvms_run02_multi_polimove/camera_fc_cropped',
+        },
+        'indy_polimove3':{'root': '20250105_lvms_run03_multi_polimove/camera_fc_cropped',
+        }
+        }
 
     @staticmethod
     def get(name):

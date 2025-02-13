@@ -99,7 +99,7 @@ def show_image_with_boxes_test(image, output, target, visualize_preds):
 	# B x C x H x W  ----> H x W x C
 	pred_heatmap = visualize_preds['heat_map']
 	all_heatmap = np.asarray(pred_heatmap[0, :, ...].cpu().sum(dim=0))
-	all_heatmap = cv2.resize(all_heatmap, (1280, 384))
+	all_heatmap = cv2.resize(all_heatmap, (1280, 384)) #TODO leva sta roba arcodata
 	all_heatmap = all_heatmap[pad_size[1] : pad_size[1] + image.shape[0], pad_size[0] : pad_size[0] + image.shape[1]]
 
 	img2 = Visualizer(image.copy()) # for 2d bbox
@@ -112,7 +112,9 @@ def show_image_with_boxes_test(image, output, target, visualize_preds):
 	# plot prediction 
 	for i in range(box2d.shape[0]):
 		img2.draw_box(box_coord=box2d[i], edge_color='g')
-		img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[clses[i]], score[i]), position=(int(box2d[i, 0]), int(box2d[i, 1])))
+		class_id = int(clses[i])
+
+		img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[class_id], score[i]), position=(int(box2d[i, 0]), int(box2d[i, 1])))
 
 		corners3d = box3d_to_corners(locs[i], dims[i], rotys[i])
 		corners_2d, depth = calib.project_rect_to_image(corners3d)
@@ -202,12 +204,12 @@ def show_all_image_with_boxes(image, outputs, target, visualize_preds, vis_score
 		# plot prediction
 		for i in range(box2d.shape[0]):
 			img2.draw_box(box_coord=box2d[i], edge_color='g')
-			img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[clses[i]], score[i]),
+			img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[int(clses[i])], score[i]),
 						   position=(int(box2d[i, 0]), int(box2d[i, 1])))
 
 			corners3d = box3d_to_corners(locs[i], dims[i], rotys[i])
 			corners_2d, depth = calib.project_rect_to_image(corners3d)
-			img3 = draw_projected_box3d(img3, corners_2d, cls=ID_TYPE_CONVERSION[clses[i]], color=pred_color,
+			img3 = draw_projected_box3d(img3, corners_2d, cls=ID_TYPE_CONVERSION[int(clses[i])], color=pred_color,
 										draw_corner=False)
 
 			corners3d_lidar = calib.project_rect_to_velo(corners3d)
@@ -255,7 +257,7 @@ def show_all_image_with_boxes(image, outputs, target, visualize_preds, vis_score
 	plt.show()
 
 # heatmap and 3D detections
-def show_image_with_boxes(image, output, target, visualize_preds, vis_scores=None, depth_method=None):
+def show_image_with_boxes(image, output, target, visualize_preds, vis_scores=None, depth_method=None, idx=0):
 	# output Tensor:
 	# clses, pred_alphas, pred_box2d, pred_dimensions, pred_locations, pred_rotys, scores
 	image = image.numpy().astype(np.uint8)
@@ -312,11 +314,13 @@ def show_image_with_boxes(image, output, target, visualize_preds, vis_scores=Non
 	# plot prediction 
 	for i in range(box2d.shape[0]):
 		img2.draw_box(box_coord=box2d[i], edge_color='g')
-		img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[clses[i]], score[i]), position=(int(box2d[i, 0]), int(box2d[i, 1])))
+		class_id = int(clses[i])
+
+		img2.draw_text(text='{}, {:.3f}'.format(ID_TYPE_CONVERSION[int(clses[i])], score[i]), position=(int(box2d[i, 0]), int(box2d[i, 1])))
 
 		corners3d = box3d_to_corners(locs[i], dims[i], rotys[i])
 		corners_2d, depth = calib.project_rect_to_image(corners3d)
-		img3 = draw_projected_box3d(img3, corners_2d, cls=ID_TYPE_CONVERSION[clses[i]], color=pred_color, draw_corner=False)
+		img3 = draw_projected_box3d(img3, corners_2d, cls=ID_TYPE_CONVERSION[int(clses[i])], color=pred_color, draw_corner=False)
 
 		corners3d_lidar = calib.project_rect_to_velo(corners3d)
 		img4 = draw_bev_box3d(img4, corners3d[np.newaxis, :], thickness=2, color=pred_color, scores=None)
@@ -361,4 +365,28 @@ def show_image_with_boxes(image, output, target, visualize_preds, vis_scores=Non
 	else:
 		plt.imshow(stack_img); plt.title('2D/3D boxes'); plt.axis('off')
 	plt.suptitle('Detections')
-	plt.show()
+	folder = 'inference_indy_cropped____CHANGE_THIS_NAME'
+	os.makedirs(folder, exist_ok=True)
+	save_plot(folder, f'plot_{idx}')
+
+def save_plot(save_path, filename, dpi=300, bbox_inches='tight'):
+    """
+    Save the current matplotlib figure instead of showing it.
+    
+    Args:
+        save_path (str): Directory where to save the image
+        filename (str): Name of the file (without extension)
+        dpi (int): DPI for the saved image
+        bbox_inches (str): How to trim the figure (default 'tight' to remove extra whitespace)
+    """
+    # Create directory if it doesn't exist
+    os.makedirs(save_path, exist_ok=True)
+    
+    # Full path for the image
+    full_path = os.path.join(save_path, f"{filename}.png")
+    
+    # Save the figure
+    plt.savefig(full_path, dpi=dpi, bbox_inches=bbox_inches)
+    
+    # Clear the current figure to free memory
+    plt.close()

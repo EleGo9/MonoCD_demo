@@ -56,8 +56,8 @@ class INDYDataset(Dataset):
 
 		self.image_files = image_files
 		self.label_files = [i.replace(".png", ".txt") for i in self.image_files]
-		self.check_empty_label()
-		self.check_out_bbox_label() # remove all 2d bboxes out of the image (TODO change this with edit instead of removal) 
+		# self.check_empty_label()
+		# self.check_out_bbox_label() # remove all 2d bboxes out of the image (TODO change this with edit instead of removal) 
 		# print(self.image_files)
 		# print(self.label_files)
 		self.use_ground_plane = cfg.USE_GROUND_PLANE
@@ -791,7 +791,7 @@ class INDYDataset(Dataset):
 		if self.debug:
 			plt.figure(figsize=(10, 6))
 			plt.imshow(img3)
-			plt.savefig(f"gt_debug/{idx}.png")  # Save the image to a file
+			plt.savefig(f"gt_debug_new/{idx}.png")  # Save the image to a file
 
 		# show_heatmap(img, heat_map, index=original_idx)
 		# show_heatmap(img, horizon_heat_map, classes=['horizon'])

@@ -36,6 +36,8 @@ torch.backends.cudnn.benchmark = True # enable cudnn to search the best algorith
 def train(cfg, model, device, distributed):
     data_loader = make_data_loader(cfg, is_train=True)
     data_loaders_val = build_test_loader(cfg, is_train=False)
+    print('Training Data Loader: ', len(data_loader.dataset))
+    print('Validation Data Loader:', len(data_loaders_val.dataset))
 
     total_iters_each_epoch = len(data_loader.dataset) // cfg.SOLVER.IMS_PER_BATCH
     # use epoch rather than iterations for saving checkpoint and validation
@@ -68,6 +70,8 @@ def train(cfg, model, device, distributed):
     if len(cfg.MODEL.WEIGHT) > 0:
         extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT, use_latest=False)
         arguments.update(extra_checkpoint_data)
+
+    # print('Data loader', len(data_loader))
 
     do_train(
         cfg,
@@ -103,7 +107,7 @@ def setup(args):
 
     if args.test:
         cfg.DATASETS.TEST_SPLIT = 'test'
-        cfg.DATASETS.TEST = ("kitti_test",)
+        cfg.DATASETS.TEST = ("indy_virginia",) #"kitti_test",)
 
     cfg.START_TIME = datetime.datetime.strftime(datetime.datetime.now(), '%m-%d %H:%M:%S')
     default_setup(cfg, args)

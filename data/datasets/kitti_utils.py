@@ -207,8 +207,9 @@ class Calibration(object):
         self.C2V = inverse_rigid_trans(self.V2C)
         
         # Rotation from reference camera coord to rect camera coord
-        self.R0 = calibs["R0_rect"]
-        self.R0 = np.reshape(self.R0, [3, 3])
+        # self.R0 = calibs["R0_rect"] # TODO edit it in the dataset
+        # self.R0 = np.reshape(self.R0, [3, 3])
+        self.R0 = np.eye(3)
 
         # Camera intrinsics and extrinsics
         self.c_u = self.P[0, 2]
@@ -1210,7 +1211,9 @@ def show_image_with_boxes(image, cls_ids, target_center, box2d, corners_2d, reg_
     if vis:
         plt.figure(figsize=(10, 6))
         plt.imshow(stacked_img)
-        plt.show()
+        # plt.show()
+        print('try to save the figure')
+        plt.savefig('inference_indy_070225/img.png')
 
     return stacked_img
 
