@@ -1,9 +1,9 @@
 DATASETS:
-  DETECT_CLASSES: ("Car", )
-  TRAIN: ("indy_train",)
-  TEST: ("indy_train",)
-  TRAIN_SPLIT: "train"
-  TEST_SPLIT: "val"
+  DETECT_CLASSES: ("Car",  "Pedestrian", "Cyclist")
+  TRAIN: ("haura",)
+  TEST: ("haura",)
+  TRAIN_SPLIT: "all"
+  TEST_SPLIT: "all"
   MAX_OBJECTS: 40
 
   USE_RIGHT_IMAGE: False
@@ -48,7 +48,7 @@ MODEL:
                            [ 3, ]
     ]
 
-    ENABLE_EDGE_FUSION: True
+    ENABLE_EDGE_FUSION: False
     TRUNCATION_OUTPUT_FUSION: 'add'
     EDGE_FUSION_NORM: 'BN'
     TRUNCATION_OFFSET_LOSS: 'log'
@@ -104,7 +104,7 @@ MODEL:
 
     PRED_DIRECT_DEPTH: True
 
-    PRED_GROUND_PLANE: True
+    PRED_GROUND_PLANE: False
     HORIZON_GAUSSIAN_RADIUS: 2
     WEIGHTINCREASED: True
     USE_EDGE_SLOPE: False
