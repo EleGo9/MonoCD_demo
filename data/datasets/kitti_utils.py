@@ -200,6 +200,7 @@ class Calibration(object):
         # Projection matrix from rect camera coord to image coord
         self.P = calibs["P3"] if use_right_cam else calibs["P2"]
         self.P = np.reshape(self.P, [3, 4])
+        self.D = calibs['D']
         
         # Rigid transform from Velodyne coord to reference camera coord
         self.V2C = calibs["Tr_velo_to_cam"]
@@ -344,9 +345,10 @@ class Calibration(object):
         pts_2d[:, 1] /= pts_2d[:, 2]
         calibs = {
             'K': np.array([[self.f_u, 0, self.c_u], [0, self.f_v, self.c_v], [0, 0, 1]]), 
-            "D": [-0.2651901705769635, 0.050965370970566935, 0.002856194005687882, -0.0019822860588629572, 0] # haura cam0
+            "D": self.D
+            # haura cam0 [-0.2651901705769635, 0.050965370970566935, 0.002856194005687882, -0.0019822860588629572, 0] 
             # fr 'D' : [-0.23523867506569429, 0.06241198860851388, -0.0014492209568959099, 0.0012389998166963657, 0]
-            #fc 'D': [-0.201739344464262, 0.086247930627047234, -0.00032902667256753601, -0.00021994952717063681, -0.015380354265408284]
+            # fc 'D': [-0.201739344464262, 0.086247930627047234, -0.00032902667256753601, -0.00021994952717063681, -0.015380354265408284]
         }
 
         for i in range(pts_2d.shape[0]):

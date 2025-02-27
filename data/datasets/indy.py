@@ -190,7 +190,6 @@ class INDYDataset(Dataset):
 	def get_image(self, idx):
 		img_filename = os.path.join(self.image_dir, self.image_files[idx])
 		img = Image.open(img_filename).convert('RGB')
-		print("Loading image", img_filename)
 		return img
 
 	def get_right_image(self, idx):
