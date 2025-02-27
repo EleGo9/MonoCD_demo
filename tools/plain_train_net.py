@@ -107,7 +107,7 @@ def setup(args):
 
     if args.test:
         cfg.DATASETS.TEST_SPLIT = 'test'
-        cfg.DATASETS.TEST = ("indy_virginia",) #"kitti_test",)
+        cfg.DATASETS.TEST = ("indy_polimove3",) #"kitti_test",)
 
     cfg.START_TIME = datetime.datetime.strftime(datetime.datetime.now(), '%m-%d %H:%M:%S')
     default_setup(cfg, args)
