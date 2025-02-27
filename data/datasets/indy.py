@@ -190,6 +190,7 @@ class INDYDataset(Dataset):
 	def get_image(self, idx):
 		img_filename = os.path.join(self.image_dir, self.image_files[idx])
 		img = Image.open(img_filename).convert('RGB')
+		print("Loading image", img_filename)
 		return img
 
 	def get_right_image(self, idx):
@@ -303,7 +304,6 @@ class INDYDataset(Dataset):
 		for obj in obj_list:
 			if obj.type not in type_whitelist:
 				continue
-
 			if self.filter_more_smoothly or self.filter_more_strictly:
 				if (obj.occlusion > self.max_occlusion) or (obj.truncation > self.max_truncation) or ((obj.ymax- obj.ymin) < self.min_height) or (
 						obj.t[-1] > self.max_depth) or (obj.t[-1] < self.min_depth):
@@ -323,7 +323,7 @@ class INDYDataset(Dataset):
 		pad_size = np.array([pad_x, pad_y])
 
 		return Image.fromarray(ret_img.astype(np.uint8)), pad_size
-	
+
 	def crop_image(self, image):
 		img = np.array(image)
 		h, w, c = img.shape
@@ -462,7 +462,6 @@ class INDYDataset(Dataset):
 		return sampled_pts
 
 	def __getitem__(self, idx):
-		
 		if idx >= self.num_samples:
 			# print('Right image')
 			# utilize right color image
@@ -526,8 +525,6 @@ class INDYDataset(Dataset):
 		# the boundaries of the image after padding and down_sampling
 		x_min, y_min = int(np.ceil(pad_size[0] / self.down_ratio)), int(np.ceil(pad_size[1] / self.down_ratio))
 		x_max, y_max = (pad_size[0] + img_w - 1) // self.down_ratio, (pad_size[1] + img_h - 1) // self.down_ratio
-		# print(x_min, y_min)
-		# print(x_max, y_max)
 		if self.enable_edge_fusion:
 			# generate edge_indices for the edge fusion module
 			input_edge_indices = np.zeros([self.max_edge_length, 2], dtype=np.int64)
@@ -587,7 +584,6 @@ class INDYDataset(Dataset):
 		# occlusion and truncation
 		occlusions = np.zeros(self.max_objs)
 		truncations = np.zeros(self.max_objs)
-		
 		if self.orientation_method == 'head-axis': orientations = np.zeros([self.max_objs, 3], dtype=np.float32)
 		else: orientations = np.zeros([self.max_objs, self.multibin_size * 2], dtype=np.float32) # multi-bin loss: 2 cls + 2 offset
 
@@ -640,11 +636,9 @@ class INDYDataset(Dataset):
 			# project 3d location to the image plane
 			proj_center, depth = calib.project_rect_to_image(locs.reshape(-1, 3))
 			proj_center = proj_center[0]
-			# print('proj_cetner', proj_center)
 
 			# generate approximate projected center when it is outside the image
 			proj_inside_img = (0 <= proj_center[0] <= img_w - 1) & (0 <= proj_center[1] <= img_h - 1)
-			
 			approx_center = False
 			if not proj_inside_img:
 				if self.consider_outside_objs:
@@ -689,7 +683,6 @@ class INDYDataset(Dataset):
 			keypoints_2D = (keypoints_2D + pad_size.reshape(1, 2)) / self.down_ratio
 			target_proj_center = (target_proj_center + pad_size) / self.down_ratio
 			proj_center = (proj_center + pad_size) / self.down_ratio
-			
 			box2d[0::2] += pad_size[0]
 			box2d[1::2] += pad_size[1]
 			box2d /= self.down_ratio
@@ -710,7 +703,6 @@ class INDYDataset(Dataset):
 			# clip to the boundary
 			target_center[0] = np.clip(target_center[0], x_min, x_max)
 			target_center[1] = np.clip(target_center[1], y_min, y_max)
-			# print('target_center', target_center )
 
 			pred_2D = True # In fact, there are some wrong annotations where the target center is outside the box2d
 			# if not (target_center[0] >= box2d[0] and target_center[1] >= box2d[1] and target_center[0] <= box2d[2] and target_center[1] <= box2d[3]):
@@ -751,7 +743,6 @@ class INDYDataset(Dataset):
 				target_centers[i] = target_center
 				# offset due to quantization for inside objects or offset from the interesection to the projected 3D center for outside objects
 				offset_3D[i] = proj_center - target_center
-				
 				# 2D bboxes
 				gt_bboxes[i] = obj.box2d.copy() # for visualization
 				# bboxes[i] = box2d #TODO check the pred_2D before this! only created for debugginh
@@ -770,7 +761,6 @@ class INDYDataset(Dataset):
 				# local coordinates for keypoints
 				keypoints[i] = np.concatenate((keypoints_2D - target_center.reshape(1, -1), keypoints_visible[:, np.newaxis]), axis=1)
 				keypoints_depth_mask[i] = keypoints_depth_valid
-				
 				dimensions[i] = np.array([obj.l, obj.h, obj.w])
 				locations[i] = locs
 				rotys[i] = rot_y
