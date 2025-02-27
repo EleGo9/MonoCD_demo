@@ -16,14 +16,18 @@ class DatasetCatalog():
 
     DATASETS = {
         'indy_virginia':{
-        'root': '20250104_lvms_run02_virginia/camera_fc_cropped',
+        'root': '20250104_lvms_run02_virginia/camera_fc_cleaned',
         },
         'indy_polimove2':{
-        'root': '20250105_lvms_run02_multi_polimove/camera_fc_cropped',
+        'root': '20250105_lvms_run02_multi_polimove/camera_fc_cleaned',
         },
-        'indy_polimove3':{'root': '20250105_lvms_run03_multi_polimove/camera_fc_cropped',
+        'indy_polimove3':{'root': '20250105_lvms_run03_multi_polimove/camera_fr_cropped',
         }
         }
+    # DATASETS = {
+    #     'haura':{
+    #     'root': 'haura_3d/torino_kitti_format/cam0_cropped',
+    #     }}
 
     @staticmethod
     def get(name):
@@ -38,6 +42,16 @@ class DatasetCatalog():
                 args=args,
             )
         elif "indy" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                root=os.path.join(data_dir, attrs["root"]),
+            )
+            return dict(
+                factory="INDYDataset",
+                args=args,
+            )
+        elif "haura" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(

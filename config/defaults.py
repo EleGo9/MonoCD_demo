@@ -22,11 +22,11 @@ _C.MODEL.INPLACE_ABN = False
 
 _C.INPUT = CN()
 # Size of the smallest side of the image during training
-_C.INPUT.HEIGHT_TRAIN = 1024
+_C.INPUT.HEIGHT_TRAIN = 384
 # Maximum size of the side of the image during training
 _C.INPUT.WIDTH_TRAIN = 1280
 # Size of the smallest side of the image during testing
-_C.INPUT.HEIGHT_TEST = 1024
+_C.INPUT.HEIGHT_TEST = 384
 # Maximum size of the side of the image during testing
 _C.INPUT.WIDTH_TEST = 1280
 
@@ -50,7 +50,7 @@ _C.INPUT.IGNORE_DONT_CARE = False
 
 _C.INPUT.KEYPOINT_VISIBLE_MODIFY = False
 _C.INPUT.ALLOW_OUTSIDE_CENTER = False
-_C.INPUT.APPROX_3D_CENTER = 'clamp' #'intersect' # or clamp
+_C.INPUT.APPROX_3D_CENTER = 'intersect' # or clamp
 _C.INPUT.ORIENTATION = 'head-axis' # multi-bin
 _C.INPUT.ORIENTATION_BIN_SIZE = 4 # multi-bin
 
@@ -70,7 +70,7 @@ _C.DATASETS.TEST = ()
 _C.DATASETS.TRAIN_SPLIT = ""
 # test split for dataset
 _C.DATASETS.TEST_SPLIT = ""
-_C.DATASETS.DETECT_CLASSES = ("Car",) #, "Pedestrian", "Cyclist")
+_C.DATASETS.DETECT_CLASSES = ("Car", "Pedestrian", "Cyclist")
 
 # filter some unreasonable annotations of objects, truncation / min_size (2D box)
 _C.DATASETS.FILTER_ANNO_ENABLE = False
@@ -92,7 +92,7 @@ _C.DATASETS.FILTER_MORE_SMOOTHLY = False
 # -----------------------------------------------------------------------------
 _C.DATALOADER = CN()
 # Number of data loading threads
-_C.DATALOADER.NUM_WORKERS = 8
+_C.DATALOADER.NUM_WORKERS = 4
 # If > 0, this enforces that each collated batch should have a size divisible
 # by SIZE_DIVISIBILITY
 _C.DATALOADER.SIZE_DIVISIBILITY = 0
@@ -212,30 +212,18 @@ _C.MODEL.HEAD.TRAIN_Y3D_KPTS_FROM_GT = False
 
 # Reference car size in (length, height, width)
 # for (car, pedestrian, cyclist)
-# _C.MODEL.HEAD.DIMENSION_MEAN = ((3.8840, 1.5261, 1.6286),
-#                                (0.8423, 1.7607, 0.6602),
-#                                (1.7635, 1.7372, 0.5968))
-<<<<<<< Updated upstream
-_C.MODEL.HEAD.DIMENSION_MEAN = ((1.2, 1.9, 5.0))
-=======
-_C.MODEL.HEAD.DIMENSION_MEAN = ((1.2, 1.9, 5.0),)
->>>>>>> Stashed changes
+_C.MODEL.HEAD.DIMENSION_MEAN = ((3.8840, 1.5261, 1.6286),
+                               (0.8423, 1.7607, 0.6602),
+                               (1.7635, 1.7372, 0.5968))
 
 # since only car and pedestrian have enough samples and are evaluated in KITTI server 
-# _C.MODEL.HEAD.DIMENSION_STD = ((0.4259, 0.1367, 0.1022),
-# 								(0.2349, 0.1133, 0.1427),
-# 								(0.1766, 0.0948, 0.1242))
-<<<<<<< Updated upstream
-_C.MODEL.HEAD.DIMENSION_STD = ((0.1, 0.1, 0.1))
+_C.MODEL.HEAD.DIMENSION_STD = ((0.4259, 0.1367, 0.1022),
+								(0.2349, 0.1133, 0.1427),
+								(0.1766, 0.0948, 0.1242))
+
 # for (car, pedestrian, cyclist)
-_C.MODEL.HEAD.Y_MEAN = (1.7098 )#, 1.4340, 1.5699)
-_C.MODEL.HEAD.Y_STD = (0.3857)#, 0.2925, 0.4222)
-=======
-_C.MODEL.HEAD.DIMENSION_STD = ((0.1, 0.1, 0.1),)
-# for (car, pedestrian, cyclist)
-_C.MODEL.HEAD.Y_MEAN = (1.7098, )#, 1.4340, 1.5699)
-_C.MODEL.HEAD.Y_STD = (0.3857,)#, 0.2925, 0.4222)
->>>>>>> Stashed changes
+_C.MODEL.HEAD.Y_MEAN = (1.7098, 1.4340, 1.5699)
+_C.MODEL.HEAD.Y_STD = (0.3857, 0.2925, 0.4222)
 
 # linear or log ; use mean or not ; use std or not
 _C.MODEL.HEAD.DIMENSION_REG = ['linear', True, False]
@@ -278,8 +266,8 @@ _C.SOLVER = CN()
 _C.SOLVER.OPTIMIZER = "adamw"
 _C.SOLVER.BASE_LR = 3e-3
 _C.SOLVER.WEIGHT_DECAY = 1e-5
-_C.SOLVER.MAX_ITERATION = 30000 # total steps in iterations
-_C.SOLVER.MAX_EPOCHS = 70 # total steps in epochs
+_C.SOLVER.MAX_ITERATION = 100000 # total steps in iterations
+_C.SOLVER.MAX_EPOCHS = 100 # total steps in epochs
 
 # AdamOneCycle, not working
 _C.SOLVER.MOMS = [0.95, 0.85] # larger lr <-> smaller momentum
@@ -331,7 +319,7 @@ _C.TEST = CN()
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
 # see 2 images per batch
 _C.TEST.SINGLE_GPU_TEST = True
-_C.TEST.IMS_PER_BATCH = 1
+_C.TEST.IMS_PER_BATCH = 128
 _C.TEST.PRED_2D = True
 
 _C.TEST.UNCERTAINTY_AS_CONFIDENCE = False
